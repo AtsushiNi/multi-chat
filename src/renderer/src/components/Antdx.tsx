@@ -210,7 +210,17 @@ const Independent: React.FC = () => {
   // ==================== Runtime ====================
   const [agent] = useXAgent({
     request: async ({ message }, { onSuccess }) => {
-      onSuccess(`Mock success return. You said: ${message}`);
+      if (!message) {
+        onSuccess('Please enter a message');
+        return;
+      }
+      try {
+        const response = await window.api.callDeepseek(message);
+        onSuccess(response);
+      } catch (error) {
+        console.error('API call failed:', error);
+        onSuccess('Sorry, there was an error processing your request.');
+      }
     },
   });
 

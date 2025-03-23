@@ -1,10 +1,11 @@
+import 'dotenv/config'
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import axios from 'axios'
 
-ipcMain.handle('call-deepseek', async (_, message: string) => {
+async function callDeepSeek(message: string): Promise<string> {
   try {
     const response = await axios.post(
       'https://api.deepseek.com/chat/completions',
@@ -28,7 +29,7 @@ ipcMain.handle('call-deepseek', async (_, message: string) => {
     console.error('Error calling DeepSeek API:', error)
     throw error
   }
-})
+}
 
 function createWindow(): void {
   // Create the browser window.
@@ -78,6 +79,10 @@ app.whenReady().then(() => {
 
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
+
+  createWindow()
+
+  ipcMain.handle('call-deepseek', (_, message: string) => callDeepSeek(message))
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
