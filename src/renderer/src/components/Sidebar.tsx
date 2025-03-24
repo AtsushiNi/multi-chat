@@ -33,7 +33,7 @@ const useStyle = createStyles(({ token, css }) => ({
     height: 72px;
     align-items: center;
     justify-content: start;
-    padding: 0 24px;
+    padding: 0 12px;
     box-sizing: border-box;
 
     img {
@@ -79,12 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const logoNode = (
     <div className={styles.logo}>
-      <img
-        src="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*eco6RrQhxbMAAAAAAAAAAAAADgCCAQ/original"
-        draggable={false}
-        alt="logo"
-      />
-      <span>Ant Design X</span>
+      <span>Multi Chat</span>
     </div>
   );
 
