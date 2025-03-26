@@ -29,6 +29,7 @@
     "antd-style": "^3.7.1",
     "dotenv": "^16.4.7",
     "electron-updater": "^6.3.9",
+    "markdown-it": "^14.1.0",
     "react-router-dom": "^7.4.0"
   },
   "devDependencies": {

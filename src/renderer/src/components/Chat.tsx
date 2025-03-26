@@ -1,6 +1,7 @@
 import {
   Attachments,
   Bubble,
+  BubbleProps,
   Prompts,
   Sender,
   Welcome,
@@ -21,7 +22,8 @@ import {
   ShareAltOutlined,
   SmileOutlined,
 } from '@ant-design/icons';
-import { Badge, Button, type GetProp, Space } from 'antd';
+import { Badge, Button, type GetProp, Space, Typography } from 'antd';
+import markdownit from 'markdown-it';
 
 const renderTitle = (icon: React.ReactNode, title: string): React.ReactNode => (
   <Space align="start">
@@ -201,11 +203,19 @@ const Chat: React.FC = () => {
     </Space>
   );
 
+  const md = markdownit({ html: true, breaks: true });
+  const renderMarkdown: BubbleProps['messageRender'] = (content) => (
+    <Typography>
+      {/* biome-ignore lint/security/noDangerouslySetInnerHtml: used in demo */}
+      <div dangerouslySetInnerHTML={{ __html: md.render(content) }} />
+    </Typography>
+  );
+
   const items: GetProp<typeof Bubble.List, 'items'> = messages.map(({ id, message, status }) => ({
     key: id,
     loading: status === 'loading',
     role: status === 'local' ? 'local' : 'ai',
-    content: message,
+    content: renderMarkdown(message),
   }));
 
   const attachmentsNode = (
