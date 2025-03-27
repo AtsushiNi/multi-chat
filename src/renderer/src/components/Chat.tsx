@@ -130,13 +130,13 @@ const roles: GetProp<typeof Bubble.List, 'roles'> = {
 import { useOutletContext } from 'react-router-dom'
 
 interface ChatProps {
-  messages?: Array<{
+  messages: Array<{
     id: string
     content: string
     role: 'user' | 'assistant'
   }>
-  conversationId?: string
-  onMessagesUpdate?: (
+  conversationId: string
+  onMessagesUpdate: (
     conversationId: string,
     message: {
       id: string
@@ -144,31 +144,12 @@ interface ChatProps {
       role: 'user' | 'assistant'
     }
   ) => void
+  updateConversationTitle: (conversationId: string, title: string) => void
 }
 
 const Chat: React.FC<ChatProps> = () => {
-  const {
-    messages,
-    conversationId, 
-    onMessagesUpdate,
-    updateConversationTitle
-  } = useOutletContext<{
-    updateConversationTitle: (conversationId: string, title: string) => void
-    messages: Array<{
-      id: string
-      content: string
-      role: 'user' | 'assistant'
-    }>
-    conversationId: string
-    onMessagesUpdate: (
-      conversationId: string,
-      message: {
-        id: string
-        content: string
-        role: 'user' | 'assistant'
-      }
-    ) => void
-  }>()
+  const { messages, conversationId, onMessagesUpdate, updateConversationTitle } =
+    useOutletContext<ChatProps>()
 
   const { styles } = useStyle()
 
