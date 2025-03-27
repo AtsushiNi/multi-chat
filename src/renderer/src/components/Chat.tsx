@@ -5,11 +5,10 @@ import {
   Prompts,
   Sender,
   Welcome,
-  useXAgent,
-  useXChat,
-} from '@ant-design/x';
-import { createStyles } from 'antd-style';
-import React from 'react';
+  useXAgent
+} from '@ant-design/x'
+import { createStyles } from 'antd-style'
+import React, { useState } from 'react'
 
 import {
   CloudUploadOutlined,
@@ -20,17 +19,17 @@ import {
   PaperClipOutlined,
   ReadOutlined,
   ShareAltOutlined,
-  SmileOutlined,
-} from '@ant-design/icons';
-import { Badge, Button, type GetProp, Space, Typography } from 'antd';
-import markdownit from 'markdown-it';
+  SmileOutlined
+} from '@ant-design/icons'
+import { Badge, Button, type GetProp, Space, Typography } from 'antd'
+import markdownit from 'markdown-it'
 
 const renderTitle = (icon: React.ReactNode, title: string): React.ReactNode => (
   <Space align="start">
     {icon}
     <span>{title}</span>
   </Space>
-);
+)
 
 const useStyle = createStyles(({ token, css }) => ({
   chat: css`
@@ -52,8 +51,8 @@ const useStyle = createStyles(({ token, css }) => ({
   `,
   sender: css`
     box-shadow: ${token.boxShadow};
-  `,
-}));
+  `
+}))
 
 const placeholderPromptsItems: GetProp<typeof Prompts, 'items'> = [
   {
@@ -72,8 +71,8 @@ const placeholderPromptsItems: GetProp<typeof Prompts, 'items'> = [
       {
         key: '1-3',
         description: `Where is the doc?`,
-      },
-    ],
+      }
+    ]
   },
   {
     key: '2',
@@ -94,10 +93,10 @@ const placeholderPromptsItems: GetProp<typeof Prompts, 'items'> = [
         key: '2-3',
         icon: <CommentOutlined />,
         description: `Express the feeling`,
-      },
-    ],
-  },
-];
+      }
+    ]
+  }
+]
 
 const senderPromptsItems: GetProp<typeof Prompts, 'items'> = [
   {
@@ -109,8 +108,8 @@ const senderPromptsItems: GetProp<typeof Prompts, 'items'> = [
     key: '2',
     description: 'Design Guide',
     icon: <ReadOutlined style={{ color: '#1890FF' }} />,
-  },
-];
+  }
+]
 
 const roles: GetProp<typeof Bubble.List, 'roles'> = {
   ai: {
@@ -118,59 +117,138 @@ const roles: GetProp<typeof Bubble.List, 'roles'> = {
     typing: { step: 5, interval: 20 },
     styles: {
       content: {
-        borderRadius: 16,
-      },
-    },
+        borderRadius: 16
+      }
+    }
   },
   local: {
     placement: 'end',
-    variant: 'shadow',
-  },
-};
+    variant: 'shadow'
+  }
+}
 
-const Chat: React.FC = () => {
-  // ==================== Style ====================
-  const { styles } = useStyle();
+import { useOutletContext } from 'react-router-dom'
 
-  // ==================== State ====================
-  const [headerOpen, setHeaderOpen] = React.useState(false);
-  const [content, setContent] = React.useState('');
-  const [attachedFiles, setAttachedFiles] = React.useState<GetProp<typeof Attachments, 'items'>>([]);
+interface ChatProps {
+  messages?: Array<{
+    id: string
+    content: string
+    role: 'user' | 'assistant'
+  }>
+  conversationId?: string
+  onMessagesUpdate?: (
+    conversationId: string,
+    message: {
+      id: string
+      content: string
+      role: 'user' | 'assistant'
+    }
+  ) => void
+}
 
-  // ==================== Runtime ====================
-  const [agent] = useXAgent({
-    request: async ({ message }, { onSuccess }) => {
-      if (!message) {
-        onSuccess('Please enter a message');
-        return;
+const Chat: React.FC<ChatProps> = () => {
+  const {
+    messages,
+    conversationId, 
+    onMessagesUpdate,
+    updateConversationTitle
+  } = useOutletContext<{
+    updateConversationTitle: (conversationId: string, title: string) => void
+    messages: Array<{
+      id: string
+      content: string
+      role: 'user' | 'assistant'
+    }>
+    conversationId: string
+    onMessagesUpdate: (
+      conversationId: string,
+      message: {
+        id: string
+        content: string
+        role: 'user' | 'assistant'
       }
+    ) => void
+  }>()
+
+  const { styles } = useStyle()
+
+  const [headerOpen, setHeaderOpen] = useState(false)
+  const [content, setContent] = useState('')
+  const [attachedFiles, setAttachedFiles] = useState<GetProp<typeof Attachments, 'items'>>([])
+  const [isLoading, setIsLoading] = useState(false)
+
+  const [agent] = useXAgent({
+    request: async ({ message, conversationId }, { onSuccess }) => {
+      if (!message) {
+        onSuccess('Please enter a message')
+        return
+      }
+
+      const newMessage = {
+        id: Date.now().toString(),
+        content: message,
+        role: 'user' as const
+      }
+      onMessagesUpdate(conversationId || '', newMessage)
+
+      setIsLoading(true)
       try {
-        const response = await window.api.callDeepseek(message);
-        onSuccess(response);
+        const response = await window.api.callDeepseek(message)
+        const aiMessage = {
+          id: Date.now().toString(),
+          content: response,
+          role: 'assistant' as const
+        }
+        onMessagesUpdate(conversationId || '', aiMessage)
       } catch (error) {
         console.error('API call failed:', error);
-        onSuccess('Sorry, there was an error processing your request.');
+        const errorMessage = {
+          id: Date.now().toString(),
+          content: error instanceof Error ? error.message : 
+                  typeof error === 'string' ? error : 
+                  'Sorry, there was an error processing your request.',
+          role: 'assistant' as const
+        }
+        onMessagesUpdate(conversationId || '', errorMessage)
+      } finally {
+        setIsLoading(false)
       }
-    },
-  });
+    }
+  })
 
-  const { onRequest, messages } = useXChat({
-    agent,
-  });
+  const handleRequest = async (message: string): Promise<void> => {
+    if (!message) return
+    await agent.request(
+      { message, conversationId },
+      {
+        onUpdate: () => {},
+        onSuccess: () => {},
+        onError: () => {}
+      }
+    )
+  }
 
   // ==================== Event ====================
   const onSubmit = (nextContent: string): void => {
-    if (!nextContent) return;
-    onRequest(nextContent);
-    setContent('');
-  };
+    if (!nextContent) return
+    
+    // 最初のメッセージの場合、先頭20文字を会話タイトルとして設定
+    if (messages.length === 0) {
+      const title = nextContent.slice(0, 20)
+      updateConversationTitle(conversationId, title)
+    }
+    
+    handleRequest(nextContent)
+    setContent('')
+  }
 
   const onPromptsItemClick: GetProp<typeof Prompts, 'onItemClick'> = (info) => {
-    onRequest(info.data.description as string);
-  };
+    handleRequest(info.data.description as string)
+  }
 
-  const handleFileChange: GetProp<typeof Attachments, 'onChange'> = (info) =>
-    setAttachedFiles(info.fileList);
+  const handleFileChange: GetProp<typeof Attachments, 'onChange'> = (info) => {
+    setAttachedFiles(info.fileList)
+  }
 
   // ==================== Nodes ====================
   const placeholderNode: React.ReactNode = (
@@ -209,20 +287,20 @@ const Chat: React.FC = () => {
       {/* biome-ignore lint/security/noDangerouslySetInnerHtml: used in demo */}
       <div dangerouslySetInnerHTML={{ __html: md.render(content) }} />
     </Typography>
-  );
+  )
 
-  const items: GetProp<typeof Bubble.List, 'items'> = messages.map(({ id, message, status }) => ({
+  const items: GetProp<typeof Bubble.List, 'items'> = messages.map(({ id, content, role }) => ({
     key: id,
-    loading: status === 'loading',
-    role: status === 'local' ? 'local' : 'ai',
-    content: renderMarkdown(message),
-  }));
+    loading: false,
+    role: role === 'user' ? 'local' : 'ai',
+    content: renderMarkdown(content)
+  }))
 
   const attachmentsNode = (
     <Badge dot={attachedFiles.length > 0 && !headerOpen}>
       <Button type="text" icon={<PaperClipOutlined />} onClick={() => setHeaderOpen(!headerOpen)} />
     </Badge>
-  );
+  )
 
   const senderHeader = (
     <Sender.Header
@@ -231,8 +309,8 @@ const Chat: React.FC = () => {
       onOpenChange={setHeaderOpen}
       styles={{
         content: {
-          padding: 0,
-        },
+          padding: 0
+        }
       }}
     >
       <Attachments
@@ -245,12 +323,12 @@ const Chat: React.FC = () => {
             : {
                 icon: <CloudUploadOutlined />,
                 title: 'Upload files',
-                description: 'Click or drag files to this area to upload',
+                description: 'Click or drag files to this area to upload'
               }
         }
       />
     </Sender.Header>
-  );
+  )
 
   // ==================== Render =================
   return (
@@ -270,11 +348,11 @@ const Chat: React.FC = () => {
         onSubmit={onSubmit}
         onChange={setContent}
         prefix={attachmentsNode}
-        loading={agent.isRequesting()}
+        loading={isLoading}
         className={styles.sender}
       />
     </div>
-  );
-};
+  )
+}
 
-export default Chat;
+export default Chat

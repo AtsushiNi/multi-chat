@@ -1,18 +1,18 @@
-import React from 'react';
-import { Button, Divider } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
-import { createStyles } from 'antd-style';
-import Conversations from '@ant-design/x/es/conversations';
+import React from 'react'
+import { Button, Divider } from 'antd'
+import { PlusOutlined } from '@ant-design/icons'
+import { createStyles } from 'antd-style'
+import Conversations from '@ant-design/x/es/conversations'
 
 interface SidebarProps {
   conversationsItems: {
-    key: string;
-    label: string;
-  }[];
-  activeKey: string;
-  onAddConversation: () => void;
-  onConversationClick: (key: string) => void;
-  onNavigateToServers: () => void;
+    key: string
+    label: string
+  }[]
+  activeKey: string
+  onAddConversation: () => void
+  onConversationClick: (key: string) => void
+  onNavigateToServers: () => void
 }
 
 const useStyle = createStyles(({ token, css }) => ({
@@ -65,23 +65,23 @@ const useStyle = createStyles(({ token, css }) => ({
     &:hover {
       background: #722ed11a;
     }
-  `,
-}));
+  `
+}))
 
 const Sidebar: React.FC<SidebarProps> = ({
   conversationsItems,
   activeKey,
   onAddConversation,
   onConversationClick,
-  onNavigateToServers,
+  onNavigateToServers
 }) => {
-  const { styles } = useStyle();
+  const { styles } = useStyle()
 
   const logoNode = (
     <div className={styles.logo}>
       <span>Multi Chat</span>
     </div>
-  );
+  )
 
   return (
     <div className={styles.menu}>
@@ -105,7 +105,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         MCP Servers
       </Button>
     </div>
-  );
-};
+  )
+}
 
-export default Sidebar;
+export default Sidebar

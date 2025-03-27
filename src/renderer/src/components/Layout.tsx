@@ -1,14 +1,8 @@
-import React from 'react';
-import Sidebar from './Sidebar';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { createStyles } from 'antd-style';
-
-const defaultConversationsItems = [
-  {
-    key: '0',
-    label: 'What is Ant Design X?',
-  },
-];
+import React, { useEffect } from 'react'
+import Sidebar from './Sidebar'
+import { Outlet, useNavigate, useParams } from 'react-router-dom'
+import { createStyles } from 'antd-style'
+import { useConversation } from '../hooks/useConversation'
 
 const useStyle = createStyles(({ token, css }) => ({
   layout: css`
@@ -23,58 +17,61 @@ const useStyle = createStyles(({ token, css }) => ({
   content: css`
     flex: 1;
     padding: ${token.paddingLG}px;
-  `,
-}));
+  `
+}))
 
 const Layout: React.FC = () => {
-  const { styles } = useStyle();
-  const navigate = useNavigate();
-  const [conversationsItems, setConversationsItems] = React.useState(defaultConversationsItems);
-  const [activeKey, setActiveKey] = React.useState(defaultConversationsItems[0].key);
+  const { styles } = useStyle()
+  const navigate = useNavigate()
+  const { conversationId } = useParams()
+  const { conversations, addMessage, createConversation, updateConversationTitle } = useConversation()
+
+  useEffect(() => {
+    if (!conversationId && conversations.length > 0) {
+      navigate(`/chat/${conversations[0].id}`, { replace: true })
+    }
+  }, [])
 
   const onNavigateToServers = (): void => {
-    navigate('/servers');
-  };
-
-  const onNavigateToChat = (): void => {
-    navigate('/chat');
-  };
+    navigate('/servers')
+  }
 
   const onAddConversation = (): void => {
-    setConversationsItems([
-      ...conversationsItems,
-      {
-        key: `${conversationsItems.length}`,
-        label: `New Conversation ${conversationsItems.length}`,
-      },
-    ]);
-    setActiveKey(`${conversationsItems.length}`);
-  };
+    const newId = createConversation(`New Conversation ${conversations.length}`)
+    navigate(`/chat/${newId}`)
+  }
 
-  const onConversationClick = (key: string): void => {
-    setActiveKey(key);
-  };
+  const onConversationClick = (id: string): void => {
+    navigate(`/chat/${id}`)
+  }
+
+  const activeConversation = conversations.find((conv) => conv.id === conversationId)
 
   return (
     <div className={styles.layout}>
       <Sidebar
-        conversationsItems={conversationsItems}
-        activeKey={activeKey}
-        onAddConversation={() => {
-          onAddConversation();
-          onNavigateToChat();
-        }}
-        onConversationClick={(key) => {
-          onConversationClick(key);
-          onNavigateToChat();
-        }}
+        conversationsItems={conversations.map((conv) => ({
+          key: conv.id,
+          label: conv.title,
+          messages: conv.messages
+        }))}
+        activeKey={conversationId || ''}
+        onAddConversation={onAddConversation}
+        onConversationClick={onConversationClick}
         onNavigateToServers={onNavigateToServers}
       />
       <div className={styles.content}>
-        <Outlet />
+        <Outlet
+          context={{
+            messages: activeConversation?.messages || [],
+            conversationId,
+            onMessagesUpdate: addMessage,
+            updateConversationTitle
+          }}
+        />
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Layout;
+export default Layout
