@@ -7,6 +7,7 @@ import axios from 'axios'
 
 async function callDeepSeek(message: string): Promise<string> {
   try {
+    console.log("start request")
     const response = await axios.post(
       'https://api.deepseek.com/chat/completions',
       {
@@ -24,6 +25,7 @@ async function callDeepSeek(message: string): Promise<string> {
         }
       }
     );
+    console.log(response.data.choices[0].message)
     return response.data.choices[0].message.content
   } catch (error) {
     console.error('Error calling DeepSeek API:', error)
