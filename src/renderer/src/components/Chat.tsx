@@ -147,7 +147,7 @@ interface ChatProps {
   updateConversationTitle: (conversationId: string, title: string) => void
 }
 
-const Chat: React.FC<ChatProps> = () => {
+const Chat: React.FC = () => {
   const { messages, conversationId, onMessagesUpdate, updateConversationTitle } =
     useOutletContext<ChatProps>()
 
