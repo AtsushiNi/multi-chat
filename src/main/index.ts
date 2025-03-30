@@ -1,19 +1,25 @@
 import 'dotenv/config'
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import axios from 'axios'
+import xml2js from 'xml2js'
+import { McpHub } from './McpHub'
+import { SYSTEM_PROMPT } from './systemPrompt'
+
+let mcpHub: McpHub
+let systemPrompt: string
 
 async function callDeepSeek(message: string): Promise<string> {
   try {
-    console.log("start request")
+    console.log('start request')
     const response = await axios.post(
       'https://api.deepseek.com/chat/completions',
       {
         model: 'deepseek-chat',
         messages: [
-          { role: 'system', content: 'You are a helpful assistant.' },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
         stream: false
@@ -21,21 +27,31 @@ async function callDeepSeek(message: string): Promise<string> {
       {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
+          Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`
         }
       }
-    );
+    )
     console.log(response.data.choices[0].message)
-    return response.data.choices[0].message.content
+    const result = await xml2js.parseStringPromise(response.data.choices[0].message.content, {
+      trim: true
+    })
+    const tool = result.response.mcp_server[0].use_mcp_tool[0]
+    console.log(mcpHub.getServers())
+    const toolResponse = await mcpHub.callTool(tool.server_name[0], tool.tool_name[0], JSON.parse(tool.arguments))
+    console.log(JSON.stringify(toolResponse))
+
+    return result.response.thinking[0]
+    // return response.data.choices[0].message.content
   } catch (error) {
     console.error('Error calling DeepSeek API:', error)
     throw error
   }
 }
 
+let mainWindow: BrowserWindow
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
     show: false,
@@ -68,7 +84,7 @@ function createWindow(): void {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
@@ -84,7 +100,31 @@ app.whenReady().then(() => {
 
   createWindow()
 
-  ipcMain.handle('call-deepseek', (_, message: string) => callDeepSeek(message))
+  mcpHub = new McpHub()
+  await mcpHub.initializeMcpServers()
+  systemPrompt = await SYSTEM_PROMPT(mcpHub)
+
+  ipcMain.handle('call-deepseek', async (event: IpcMainInvokeEvent, message: string) => {
+    try {
+      const response = await callDeepSeek(message)
+      return response
+    } catch (error) {
+      showErrorMessage('DeepSeek API呼び出しエラー')
+      throw error
+    }
+  })
+
+  ipcMain.handle('get-mcp-servers', () => {
+    try {
+      const servers = mcpHub.getServers()
+      return servers
+    } catch (error) {
+      showErrorMessage(
+        typeof error === 'string' ? error : error instanceof Error ? error : String(error)
+      )
+      throw error
+    }
+  })
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
@@ -102,5 +142,19 @@ app.on('window-all-closed', () => {
   }
 })
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+// 画面にメッセージを表示する関数
+export function showInformationMessage(message: string): void {
+  mainWindow.webContents.send('information-message', message)
+}
+
+// 画面に警告メッセージを表示する関数
+export function showWarningMessage(warning: Error | string): void {
+  const warningMessage = typeof warning === 'string' ? warning : warning.message
+  mainWindow.webContents.send('warning-message', warningMessage)
+}
+
+// 画面にエラーメッセージを表示する関数
+export function showErrorMessage(error: Error | string): void {
+  const errorMessage = typeof error === 'string' ? error : error.message
+  mainWindow.webContents.send('error-message', errorMessage)
+}
