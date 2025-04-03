@@ -1,15 +1,6 @@
-import {
-  Attachments,
-  Bubble,
-  BubbleProps,
-  Prompts,
-  Sender,
-  Welcome,
-  useXAgent
-} from '@ant-design/x'
+import { Attachments, Bubble, BubbleProps, Prompts, Sender, Welcome } from '@ant-design/x'
 import { createStyles } from 'antd-style'
 import React, { useState } from 'react'
-
 import {
   CloudUploadOutlined,
   CommentOutlined,
@@ -23,6 +14,8 @@ import {
 } from '@ant-design/icons'
 import { Badge, Button, type GetProp, Space, Typography } from 'antd'
 import markdownit from 'markdown-it'
+import { useOutletContext } from 'react-router-dom'
+import { Message } from '../../../main/types/MessageTypes'
 
 const renderTitle = (icon: React.ReactNode, title: string): React.ReactNode => (
   <Space align="start">
@@ -62,15 +55,15 @@ const placeholderPromptsItems: GetProp<typeof Prompts, 'items'> = [
     children: [
       {
         key: '1-1',
-        description: `What's new in X?`,
+        description: `What's new in X?`
       },
       {
         key: '1-2',
-        description: `What's AGI?`,
+        description: `What's AGI?`
       },
       {
         key: '1-3',
-        description: `Where is the doc?`,
+        description: `Where is the doc?`
       }
     ]
   },
@@ -82,17 +75,17 @@ const placeholderPromptsItems: GetProp<typeof Prompts, 'items'> = [
       {
         key: '2-1',
         icon: <HeartOutlined />,
-        description: `Know the well`,
+        description: `Know the well`
       },
       {
         key: '2-2',
         icon: <SmileOutlined />,
-        description: `Set the AI role`,
+        description: `Set the AI role`
       },
       {
         key: '2-3',
         icon: <CommentOutlined />,
-        description: `Express the feeling`,
+        description: `Express the feeling`
       }
     ]
   }
@@ -102,12 +95,12 @@ const senderPromptsItems: GetProp<typeof Prompts, 'items'> = [
   {
     key: '1',
     description: 'Hot Topics',
-    icon: <FireOutlined style={{ color: '#FF4D4F' }} />,
+    icon: <FireOutlined style={{ color: '#FF4D4F' }} />
   },
   {
     key: '2',
     description: 'Design Guide',
-    icon: <ReadOutlined style={{ color: '#1890FF' }} />,
+    icon: <ReadOutlined style={{ color: '#1890FF' }} />
   }
 ]
 
@@ -127,23 +120,10 @@ const roles: GetProp<typeof Bubble.List, 'roles'> = {
   }
 }
 
-import { useOutletContext } from 'react-router-dom'
-
 interface ChatProps {
-  messages: Array<{
-    id: string
-    content: string
-    role: 'user' | 'assistant'
-  }>
+  messages: Message[]
   conversationId: string
-  onMessagesUpdate: (
-    conversationId: string,
-    message: {
-      id: string
-      content: string
-      role: 'user' | 'assistant'
-    }
-  ) => void
+  onMessagesUpdate: (conversationId: string, message: Message) => void
   updateConversationTitle: (conversationId: string, title: string) => void
 }
 
@@ -158,67 +138,53 @@ const Chat: React.FC = () => {
   const [attachedFiles, setAttachedFiles] = useState<GetProp<typeof Attachments, 'items'>>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  const [agent] = useXAgent({
-    request: async ({ message, conversationId }, { onSuccess }) => {
-      if (!message) {
-        onSuccess('Please enter a message')
-        return
-      }
-
-      const newMessage = {
-        id: Date.now().toString(),
-        content: message,
-        role: 'user' as const
-      }
-      onMessagesUpdate(conversationId || '', newMessage)
-
-      setIsLoading(true)
-      try {
-        const response = await window.api.callDeepseek(message)
-        const aiMessage = {
-          id: Date.now().toString(),
-          content: response,
-          role: 'assistant' as const
-        }
-        onMessagesUpdate(conversationId || '', aiMessage)
-      } catch (error) {
-        console.error('API call failed:', error);
-        const errorMessage = {
-          id: Date.now().toString(),
-          content: error instanceof Error ? error.message : 
-                  typeof error === 'string' ? error : 
-                  'Sorry, there was an error processing your request.',
-          role: 'assistant' as const
-        }
-        onMessagesUpdate(conversationId || '', errorMessage)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-  })
-
   const handleRequest = async (message: string): Promise<void> => {
-    if (!message) return
-    await agent.request(
-      { message, conversationId },
-      {
-        onUpdate: () => {},
-        onSuccess: () => {},
-        onError: () => {}
+    if (!message) {
+      return
+    }
+
+    const newMessage: Message = {
+      content: message,
+      role: 'user'
+    }
+    onMessagesUpdate(conversationId, newMessage)
+
+    setIsLoading(true)
+    try {
+      const updatedMessages = [...messages, newMessage]
+      const response = await window.api.callDeepseek(updatedMessages)
+      const aiMessage: Message = {
+        content: response,
+        role: 'assistant'
       }
-    )
+      onMessagesUpdate(conversationId, aiMessage)
+    } catch (error) {
+      console.error('API call failed:', error)
+      const errorMessage: Message = {
+        content:
+          error instanceof Error
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'Sorry, there was an error processing your request.',
+        role: 'assistant'
+      }
+      onMessagesUpdate(conversationId, errorMessage)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // ==================== Event ====================
   const onSubmit = (nextContent: string): void => {
     if (!nextContent) return
-    
+
     // 最初のメッセージの場合、先頭20文字を会話タイトルとして設定
     if (messages.length === 0) {
       const title = nextContent.slice(0, 20)
       updateConversationTitle(conversationId, title)
     }
-    
+
     handleRequest(nextContent)
     setContent('')
   }
@@ -251,18 +217,18 @@ const Chat: React.FC = () => {
         items={placeholderPromptsItems}
         styles={{
           list: {
-            width: '100%',
+            width: '100%'
           },
           item: {
-            flex: 1,
-          },
+            flex: 1
+          }
         }}
         onItemClick={onPromptsItemClick}
       />
     </Space>
-  );
+  )
 
-  const md = markdownit({ html: true, breaks: true });
+  const md = markdownit({ html: true, breaks: true })
   const renderMarkdown: BubbleProps['messageRender'] = (content) => (
     <Typography>
       {/* biome-ignore lint/security/noDangerouslySetInnerHtml: used in demo */}
@@ -270,8 +236,8 @@ const Chat: React.FC = () => {
     </Typography>
   )
 
-  const items: GetProp<typeof Bubble.List, 'items'> = messages.map(({ id, content, role }) => ({
-    key: id,
+  const items: GetProp<typeof Bubble.List, 'items'> = messages.map(({ content, role }, index) => ({
+    key: `msg-${index}`,
     loading: false,
     role: role === 'user' ? 'local' : 'ai',
     content: renderMarkdown(content)

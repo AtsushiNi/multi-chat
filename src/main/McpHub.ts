@@ -252,8 +252,7 @@ export class McpHub {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async updateServerConnections(newServers: Record<string, any>): Promise<void> {
+  async updateServerConnections(newServers: Record<string, StdioServerParameters>): Promise<void> {
     this.isConnecting = true
     const currentNames = new Set(this.connections.map((conn) => conn.server.name))
     const newNames = new Set(Object.keys(newServers))
