@@ -4,7 +4,7 @@ import { ConversationContext, Conversation, Message } from '../contexts/Conversa
 export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const defaultConversation: Conversation = {
     id: Date.now().toString(),
-    title: "New Conversation",
+    title: 'New Conversation',
     messages: [],
     createdAt: new Date()
   }
@@ -12,11 +12,10 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const addMessage = (conversationId: string, message: Message): void => {
     setConversations((prev) => {
-      return prev.map((conv) => 
-          conv.id === conversationId ? { ...conv, messages: [...conv.messages, message] } : conv
+      return prev.map((conv) =>
+        conv.id === conversationId ? { ...conv, messages: [...conv.messages, message] } : conv
       )
-    }
-    )
+    })
   }
 
   const createConversation = (title: string): string => {
@@ -31,10 +30,8 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
   }
 
   const updateConversationTitle = (conversationId: string, title: string): void => {
-    setConversations((prev) => 
-      prev.map((conv) => 
-        conv.id === conversationId ? { ...conv, title } : conv
-      )
+    setConversations((prev) =>
+      prev.map((conv) => (conv.id === conversationId ? { ...conv, title } : conv))
     )
   }
 

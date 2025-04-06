@@ -1,11 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { McpServer } from '../main/types/McpHubTypes'
+import { Message } from '../main/types/MessageTypes'
 
 // Custom APIs for renderer
 const api = {
-  callDeepseek: async (message: string): Promise<string> => {
-    return await ipcRenderer.invoke('call-deepseek', message)
+  callDeepseek: async (messages: Message[]): Promise<string> => {
+    return await ipcRenderer.invoke('call-deepseek', messages)
   },
   getMcpServers: async (): Promise<McpServer[]> => {
     return await ipcRenderer.invoke('get-mcp-servers')

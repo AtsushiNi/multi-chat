@@ -76,6 +76,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   onNavigateToServers
 }) => {
   const { styles } = useStyle()
+  const func = (key: string): void => {
+    onConversationClick(key)
+  }
 
   const logoNode = (
     <div className={styles.logo}>
@@ -98,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         items={conversationsItems}
         className={styles.conversations}
         activeKey={activeKey}
-        onActiveChange={onConversationClick}
+        onActiveChange={func}
       />
       <Divider />
       <Button className={styles.mcpBtn} onClick={onNavigateToServers}>
