@@ -8,6 +8,35 @@ import axios from 'axios'
 import xml2js from 'xml2js'
 import { McpHub } from './McpHub'
 import { SYSTEM_PROMPT } from './systemPrompt'
+import { McpServerDetail } from './types/McpHubTypes'
+
+async function fetchGitHubReadme(repoPath: string): Promise<string> {
+  try {
+    // const regex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)$/;
+    // const match = `${repoPath}/README.md`.match(regex);
+
+    // if (!match) {
+    //   throw new Error('Invalid GitHub blob URL');
+    // }
+
+    // const [, user, repo, branch, path] = match;
+    // const url = `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${path}`;
+    const url = repoPath.replace('/tree/', '/raw/refs/heads/') + "/README.md"
+    console.log(url)
+    // const url = `${repoPath}/README.md`
+    const response = await axios.get(url, {
+      headers: {
+        'Accept': 'application/vnd.github.v3.raw',
+        'User-Agent': 'multi-chat-app'
+      }
+    })
+    console.log(response.data)
+    return response.data
+  } catch (error) {
+    console.error('GitHub README取得エラー:', error)
+    throw error
+  }
+}
 
 let mcpHub: McpHub
 let systemPrompt: string
@@ -173,6 +202,29 @@ app.whenReady().then(async () => {
       showErrorMessage(
         typeof error === 'string' ? error : error instanceof Error ? error : String(error)
       )
+      throw error
+    }
+  })
+
+  ipcMain.handle('get-recommended-servers', async () => {
+    try {
+      const servers = (await import('../../servers.json')).default as Array<Partial<McpServerDetail> & { isRecommended?: boolean }>
+      const recommendedServers = servers.filter(server => server.isRecommended)
+      return recommendedServers
+    } catch (error) {
+      showErrorMessage(
+        typeof error === 'string' ? error : error instanceof Error ? error : String(error)
+      )
+      throw error
+    }
+  })
+
+  ipcMain.handle('fetch-github-readme', async (_, repoPath: string) => {
+    try {
+      const readme = await fetchGitHubReadme(repoPath)
+      return readme
+    } catch (error) {
+      showErrorMessage('GitHub README取得エラー')
       throw error
     }
   })

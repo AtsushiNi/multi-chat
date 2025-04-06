@@ -1,5 +1,6 @@
 export type McpServer = {
   name: string
+  description?: string
   config: string
   status: 'connected' | 'connecting' | 'disconnected'
   error?: string
@@ -8,6 +9,11 @@ export type McpServer = {
   resourceTemplates?: McpResourceTemplate[]
   disabled?: boolean
   timeout?: number
+  isRecommended?: boolean
+  logoUrl?: string
+  author?: string
+  githubStars?: number
+  tags?: string[]
 }
 
 export type McpTool = {

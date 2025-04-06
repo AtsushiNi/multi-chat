@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { McpServer } from '../main/types/McpHubTypes'
+import { McpServer, McpServerDetail } from '../main/types/McpHubTypes'
 import { Message } from '../main/types/MessageTypes'
 
 // Custom APIs for renderer
@@ -10,6 +10,12 @@ const api = {
   },
   getMcpServers: async (): Promise<McpServer[]> => {
     return await ipcRenderer.invoke('get-mcp-servers')
+  },
+  getRecommendedServers: async (): Promise<McpServerDetail[]> => {
+    return await ipcRenderer.invoke('get-recommended-servers')
+  },
+  fetchGithubReadme: async (repoPath: string): Promise<string> => {
+    return await ipcRenderer.invoke('fetch-github-readme', repoPath)
   }
 }
 

@@ -3,6 +3,8 @@
 interface Window {
   api: {
     callDeepseek: (messages: Message[]) => Promise<string>,
-    getMcpServers: () => Promise<McpServer[]>
+    getMcpServers: () => Promise<McpServer[]>,
+    getRecommendedServers: () => Promise<McpServerDetail[]>,
+    fetchGithubReadme: (repoPath: string) => Promise<string>
   }
 }
