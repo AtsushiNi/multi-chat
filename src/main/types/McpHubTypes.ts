@@ -40,6 +40,7 @@ export type McpServer = {
   resourceTemplates?: McpResourceTemplate[]
   disabled?: boolean
   timeout?: number
+  isRecommended?: boolean
 }
 
 export type McpTool = {
@@ -102,6 +103,17 @@ export type McpServerConfig = {
       withCredentials?: boolean
     }
 )
+
+export interface McpServerDetail {
+  mcpId: string
+  githubUrl: string
+  name: string
+  author: string
+  description: string
+  readmeContent: string
+  llmsInstallationContent: string
+  requiresApiKey: boolean
+}
 
 export const AutoApproveSchema = z.array(z.string()).default([])
 

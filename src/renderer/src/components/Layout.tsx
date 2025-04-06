@@ -36,9 +36,10 @@ const Layout: React.FC = () => {
     navigate('/servers')
   }
 
-  const onAddConversation = (): void => {
+  const onAddConversation = (): string => {
     const newId = createConversation(`New Conversation ${conversations.length}`)
     navigate(`/chat/${newId}`)
+    return newId
   }
 
   const onConversationClick = (id: string): void => {
@@ -66,7 +67,8 @@ const Layout: React.FC = () => {
             messages: activeConversation?.messages || [],
             conversationId,
             onMessagesUpdate: addMessage,
-            updateConversationTitle
+            updateConversationTitle,
+            onAddConversation
           }}
         />
       </div>
